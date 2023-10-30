@@ -2,7 +2,7 @@ import json
 import os
 
 import numpy as np
-
+import pandas as pd
 from beartype.typing import Dict, List, Union
 from datasets import load_dataset
 from chatllama.rlhf.config import Config, ConfigActor, ConfigReward
@@ -427,6 +427,113 @@ class AnthropicRLHF(BaseDataset):
 
         # save rlhf training data
         with open(f"{dataset_folder}/rlhf_training_data.json", "w") as f:
+            json.dump(conversations, f, indent=4)
+
+        print("Generation Completed")
+
+
+class StanfordNLPSHPRewardDataset(BaseDataset):
+    """Class for Stanford NLP SHP dataset from HuggingFace"""
+
+    def __init__(
+        self,
+    ) -> None:
+        print("Download the dataset")
+        self.dataset = load_dataset("stanfordnlp/SHP")
+        print("Download Completed")
+
+    def reformat_dataset(self, data: List) -> List[Dict]:
+        """Reformat the dataset to the format required by RLHF
+
+        Args:
+            data (List): dataset from HuggingFace
+
+        Returns:
+            List[Dict]: reformatted dataset
+        """
+        
+        def get_score_winning_answer(x):
+
+            return int(
+                (
+                    min(x["score"], upper_whisker[x["post_id"]])
+                    / min(max_vote[x["post_id"]], upper_whisker[x["post_id"]])
+                ) * 5
+            )
+
+        data = data.to_pandas()
+
+        A_answers = data[["c_root_id_A", "score_A", "post_id", "history", "human_ref_A"]]
+        B_answers = data[["c_root_id_B", "score_B", "post_id", "history", "human_ref_B"]]
+
+        # Take both answers A and B
+        A_answers.rename(
+            columns={
+                "c_root_id_A": "c_id",
+                "score_A": "score",
+                "history": "user_input",
+                "human_ref_A": "completion",
+            },
+            inplace=True,
+        )
+        B_answers.rename(
+            columns={
+                "c_root_id_B": "c_id",
+                "score_B": "score",
+                "history": "user_input",
+                "human_ref_B": "completion",
+            },
+            inplace=True,
+        )
+        conversations = pd.concat([A_answers, B_answers], axis=0)
+
+        # Removing duplicates so that each answer is used only once
+        conversations.drop_duplicates(subset=["c_id"], inplace=True)
+
+        # Computing for each post the upper whisker as Q3 + 1.5 * IQR
+        upper_whisker = conversations.groupby(by=["post_id"]).agg(
+            {"score": lambda x: x.quantile(0.75) + 1.5 * (x.quantile(0.75) - x.quantile(0.25))}
+        )["score"]
+        
+        max_vote = conversations.groupby(by=["post_id"]).agg({"score": max})["score"]
+        
+        norm_score = conversations.apply(get_score_winning_answer, axis=1)
+
+        conversations["reward"] = norm_score
+
+        conversations = conversations[["user_input", "completion", "reward"]].rename({"reward":"score"}).to_dict("records")
+
+        return conversations
+
+    def save_dataset(
+        self, dataset_folder: str, number_of_samples: int, reverse: bool = True
+    ) -> None:
+        """Save the dataset in the format required by RLHF
+
+        Args:
+            dataset_folder (str): path to the folder where the dataset
+                will be saved
+            number_of_samples (int): number of samples to take from the
+                dataset
+            reverse (bool, optional): sort the dataset in descending order.
+                Defaults to True.
+        """
+
+        print("Generate reward datasets")
+
+        # take the train and test dataset to create the finetuning dataset
+        conversations = self.reformat_dataset(self.dataset["train"])
+        conversations.extend(self.reformat_dataset(self.dataset["test"]))
+
+        # sort conversations by length of user_input + completion
+        conversations = self.sort_conversation(conversations, reverse=reverse)
+
+        # take N samples and sort them
+        conversations = self.take_n_samples(conversations, number_of_samples)
+        conversations = self.sort_conversation(conversations, reverse=reverse)
+
+        # save reward training data
+        with open(f"{dataset_folder}/reward_training_data.json", "w") as f:
             json.dump(conversations, f, indent=4)
 
         print("Generation Completed")
