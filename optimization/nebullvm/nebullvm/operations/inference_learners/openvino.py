@@ -20,7 +20,6 @@ from nebullvm.optional_modules.openvino import (
     Core,
     Model,
     CompiledModel,
-    InferRequest,
 )
 from nebullvm.optional_modules.tensorflow import tensorflow as tf
 from nebullvm.optional_modules.torch import torch
@@ -52,7 +51,6 @@ class OpenVinoInferenceLearner(BaseInferenceLearner, ABC):
     def __init__(
         self,
         compiled_model: CompiledModel,
-        infer_request: InferRequest,
         input_keys: List,
         output_keys: List,
         description_file: str,
@@ -62,7 +60,6 @@ class OpenVinoInferenceLearner(BaseInferenceLearner, ABC):
     ):
         super().__init__(**kwargs)
         self.compiled_model = compiled_model
-        self.infer_request = infer_request
         self.input_keys = input_keys
         self.output_keys = output_keys
         self.device = device
@@ -147,7 +144,6 @@ class OpenVinoInferenceLearner(BaseInferenceLearner, ABC):
             model.reshape(dynamic_shape)
 
         compiled_model = core.compile_model(model=model, device_name="CPU")
-        infer_request = compiled_model.create_infer_request()
 
         input_keys = list(
             map(lambda obj: obj.get_any_name(), compiled_model.inputs)
@@ -158,7 +154,6 @@ class OpenVinoInferenceLearner(BaseInferenceLearner, ABC):
 
         return cls(
             compiled_model,
-            infer_request,
             input_keys,
             output_keys,
             input_tfms=input_tfms,
@@ -240,18 +235,15 @@ class OpenVinoInferenceLearner(BaseInferenceLearner, ABC):
         input_arrays: Generator[np.ndarray, None, None],
     ) -> Generator[np.ndarray, None, None]:
 
-        results = self.infer_request.infer(
+        results = self.compiled_model(
             inputs={
                 input_key: input_array
                 for input_key, input_array in zip(
                     self.input_keys, input_arrays
                 )
-            }
+            },
+            shared_memory=True,  # always enabled
         )
-        results = {
-            output_key.get_any_name(): output_arr
-            for output_key, output_arr in results.items()
-        }
 
         return (results[output_key] for output_key in self.output_keys)
 
