@@ -1,8 +1,8 @@
 import argparse
 import json
 
-from langchain import OpenAI, LLMChain, PromptTemplate
-
+from langchain import OpenAI, LLMChain, PromptTemplate, HuggingFaceHub
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 class ScoreGenerator:
     def __init__(
@@ -10,25 +10,35 @@ class ScoreGenerator:
         llm_model: str,
         llm_temperature: float,
         llm_max_tokens: int,
+        llm_local_dir: str,
         reward_template: dict,
     ) -> None:
 
         self.llm_max_tokens = llm_max_tokens
         self.llm_temperature = llm_temperature
         self.llm_model = llm_model
-
-        # initialize LLM and LangChain
-        openai_llm = OpenAI(
-            model_name=llm_model,
-            temperature=llm_temperature,
-            max_tokens=llm_max_tokens,
-        )
+        self.llm_local_dir = llm_local_dir
+        self.reward_template = reward_template
 
         # Customaize your own Reward template by changing the
         # prompt_template
         prompt_template = PromptTemplate(**reward_template)
         print(prompt_template)
-        self.llm = LLMChain(llm=openai_llm, prompt=prompt_template)
+
+        # initialize LLM and LangChain
+        if llm_local_dir == None:
+            if llm_model == "flan-t5-xl":
+                hf_llm=HuggingFaceHub(repo_id="google/flan-t5-xl", model_kwargs={"temperature":llm_temperature, "max_length":llm_max_tokens, "raw_response":True})
+                self.llm = LLMChain(llm=hf_llm, prompt=prompt_template)
+            else:
+                openai_llm = OpenAI(
+                    model_name=llm_model,
+                    temperature=llm_temperature,
+                    max_tokens=llm_max_tokens,
+                )
+                self.llm = LLMChain(llm=openai_llm, prompt=prompt_template) 
+        elif llm_model != "flan-t5-xl":
+            raise Exception('Only local LLM supported is HuggingFace’s flan-t5-xl model, try again with -m flan-t5-xl')
 
     def distill(
         self,
@@ -37,7 +47,9 @@ class ScoreGenerator:
         """Parse the dataset and assign scores using LLMs
         then save back the dataset with the uploaded scores
         """
-
+        model_path = self.llm_local_dir
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_path,temperature=self.llm_temperature, max_length=self.llm_max_tokens)
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
         print("Assigning scores to the reward dataset...")
 
         # load the dataset
@@ -55,11 +67,15 @@ class ScoreGenerator:
                     f"#### User_input:\n {user_input}\n"
                     f"#### Completion:\n {completion}\n"
                 )
-                prompt_tokens = (
-                    data["user_input"]
-                    + data["completion"]
-                    + self.llm.prompt.template
-                )
+                if self.llm_local_dir == None:
+                    prompt_tokens = (
+                        data["user_input"]
+                        + data["completion"]
+                        + self.reward_template["template"]
+                        + self.llm.prompt.template
+                    )
+                else:
+                    prompt_tokens = (data["user_input"] + data["completion"] + REWARD_TEMPLATE["template"])
                 prompt_len = int(len(prompt_tokens.split(" ")) / 0.75)
                 # 80% of the max length as safety margin
                 if prompt_len > self.llm_max_tokens * 0.8:
@@ -69,10 +85,17 @@ class ScoreGenerator:
                         f"max_tokens: {self.llm_max_tokens * 0.8}"
                     )
                     continue
-                score = self.llm.run(
-                    user_input=data["user_input"],
-                    completion=data["completion"],
-                ).strip()
+                
+                if self.llm_local_dir == None:
+                    score = self.llm.run(
+                        user_input=data["user_input"],
+                        completion=data["completion"],
+                        raw_response=True,
+                    ).strip()
+                else:
+                    inputs = tokenizer(prompt_tokens, padding=True, max_length=self.llm_max_tokens, truncation=True, return_tensors="pt")
+                    out = tokenizer.batch_decode(model.generate(**inputs),skip_special_tokens=True)
+                    score = out[0]
                 # TODO: extract from score the float value with a regex
                 try:
                     score = float(score)
@@ -90,7 +113,6 @@ class ScoreGenerator:
         print("Writing the updated dataset back to disk ... ")
         with open(dataset_path, "w") as f:
             json.dump(train_data, f)
-
         print("Score Assignment Completed")
 
 
@@ -142,6 +164,12 @@ if __name__ == "__main__":
         help="Specify the reward template to be used",
         default=None,
     )
+    parser.add_argument(
+        "-l",
+        "--local_directory",
+        help="Specify the directory of the locally stored LLM to be used",
+        default=None,
+    )
 
     # parse arguments
     args = parser.parse_args()
@@ -156,7 +184,7 @@ if __name__ == "__main__":
         rw_template = REWARD_TEMPLATE
 
     score_generator = ScoreGenerator(
-        args.model, args.temperature, args.max_tokens, rw_template
+        args.model, args.temperature, args.max_tokens, args.local_directory, rw_template
     )
 
     score_generator.distill(args.dataset_path)
