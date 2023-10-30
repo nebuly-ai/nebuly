@@ -8,4 +8,4 @@ In this section you can find optimization notebooks for multiple DL input models
 - Pytorch
 - Tensorflow
 
-Please check out notebooks and tutorials on GitHub at [this](https://github.com/nebuly-ai/nebullvm/tree/main/notebooks/speedster) link.
+Please check out notebooks and tutorials on GitHub at [this](https://github.com/nebuly-ai/nebuly/tree/main/optimization/speedster/notebooks) link.

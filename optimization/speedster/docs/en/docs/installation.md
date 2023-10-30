@@ -147,28 +147,31 @@ The following table shows the supported combinations of frameworks, backends and
 
 If you want to manually install the requirements, this section collects links to the official installation guides for all frameworks and compilers supported by `Speedster`.
 
-#### Deep Learning frameworks/backends
-- PyTorch: https://pytorch.org/get-started/locally/
-- TensorFlow: https://www.tensorflow.org/install
-- ONNX: https://github.com/onnx/onnx#installation
-- HuggingFace: https://huggingface.co/transformers/installation.html
-- Diffusers: https://github.com/huggingface/diffusers#installation
+### Deep Learning frameworks/backends
 
-#### Deep Learning compilers
-- DeepSparse: https://github.com/neuralmagic/deepsparse#installation
-- TensorRT: https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html
-- Torch TensorRT: https://pytorch.org/TensorRT/getting_started/installation.html#installation
-- ONNXRuntime: https://onnxruntime.ai/docs/install/#python-installs
-- OpenVINO: https://docs.openvino.ai/latest/openvino_docs_install_guides_install_dev_tools.html#step-4-install-the-package
-- Intel Neural Compressor: https://github.com/intel/neural-compressor#installation
-- Apache TVM: https://tvm.apache.org/docs/install/index.html
+- [PyTorch](https://pytorch.org/get-started/locally/)
+- [TensorFlow](https://www.tensorflow.org/install)
+- [ONNX](https://github.com/onnx/onnx#installation)
+- [HuggingFace](https://huggingface.co/transformers/installation.html)
+- [Diffusers](https://github.com/huggingface/diffusers#installation)
 
-#### Other requirements
-- tf2onnx: https://github.com/onnx/tensorflow-onnx#installation (Install it if you want to convert TensorFlow models to ONNX)
-- polygraphy: https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy#installation (Install it if you want to use TensorRT)
-- onnx-simplifier: https://github.com/daquexian/onnx-simplifier#python-version (Install it if you want to use TensorRT)
-- onnx_graphsurgeon: https://github.com/NVIDIA/TensorRT/tree/master/tools/onnx-graphsurgeon#installation (Install it if you want to use TensorRT with Stable Diffusion)
-- onnxmltools: https://github.com/onnx/onnxmltools#install (Install it if you want to convert models to ONNX)
+### Deep Learning compilers
+
+- [DeepSparse](https://github.com/neuralmagic/deepsparse#installation)
+- [TensorRT](https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html)
+- [Torch TensorRT](https://pytorch.org/TensorRT/getting_started/installation.html#installation)
+- [ONNXRuntime](https://onnxruntime.ai/docs/install/#python-installs)
+- [OpenVINO](https://docs.openvino.ai/latest/openvino_docs_install_guides_install_dev_tools.html#step-4-install-the-package)
+- [Intel Neural Compressor](https://github.com/intel/neural-compressor#installation)
+- [Apache TVM](https://tvm.apache.org/docs/install/index.html)
+
+### Other requirements
+
+- [tf2onnx](https://github.com/onnx/tensorflow-onnx#installation) (Install it if you want to convert TensorFlow models to ONNX)
+- [polygraphy](https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy#installation) (Install it if you want to use TensorRT)
+- [onnx-simplifier](https://github.com/daquexian/onnx-simplifier#python-version) (Install it if you want to use TensorRT)
+- [onnx_graphsurgeon](https://github.com/NVIDIA/TensorRT/tree/master/tools/onnx-graphsurgeon#installation) (Install it if you want to use TensorRT with Stable Diffusion)
+- [onnxmltools](https://github.com/onnx/onnxmltools#install) (Install it if you want to convert models to ONNX)
 
 ## (Optional) Download Docker images with frameworks and optimizers
 
@@ -182,7 +185,7 @@ and then run and access the Docker with:
 
     docker run -ti --gpus=all nebulydocker/nebullvm:latest
 
-After optimizing the model, you may decide to deploy it to production. Note that you need to have the deep learning compiler used to optimize the model and other components inside the production Docker. For this reason, we have created several versions of the Docker nebullvm container in the [Docker Hub](https://hub.docker.com/repository/docker/nebulydocker/nebullvm), each containing only one compiler. Pull the image with the compiler that has optimized your model!
+After optimizing the model, you may decide to deploy it to production. Note that you need to have the deep learning compiler used to optimize the model and other components inside the production Docker. For this reason, we have created several versions of the Docker nebullvm container in the [Docker Hub](https://hub.docker.com/r/nebulydocker/nebullvm), each containing only one compiler. Pull the image with the compiler that has optimized your model!
 
 ## Set up Speedster on custom DL devices
 
@@ -208,18 +211,20 @@ You are now ready to use Speedster on TPUs! Speedster will automatically detect 
 
 ### AWS Inferentia
 
-For AWS Inferentia, you must first create an AWS EC2 instance with the `inf1` instance type. 
+For AWS Inferentia, you must first create an AWS EC2 instance with the `inf1` instance type.
 You can find more information about `inf1` instances in the [official documentation](https://aws.amazon.com/it/ec2/instance-types/inf1/).
 
 !!! info
-    AWS has recently released the `inf2` instance type, which is a more powerful version of `inf1`. For now `inf2` 
+    AWS has recently released the `inf2` instance type, which is a more powerful version of `inf1`. For now `inf2`
 instances are only available in private preview, you can request them directly to AWS by filling this [form](https://pages.awscloud.com/EC2-Inf2-Preview.html).
 
 To use Speedster on AWS Inferentia, we will use the [`torch-neuron`](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/torch-setup.html) library, that must be manually installed on `inf1` instances (on `inf2`instances it's already preinstalled if you use the PyTorch DLAMI provided by AWS).
 
 You can find here the full guides to set up the EC2 instances and install the required libraries:
-- `inf1`: https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/torch-neuron/setup/pytorch-install.html#install-neuron-pytorch
-- `inf2`: https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/torch-neuronx/setup/pytorch-install.html#pytorch-neuronx-install
+
+- `inf1`: <https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/torch-neuron/setup/pytorch-install.html#install-neuron-pytorch>
+
+- `inf2`: <https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/torch-neuronx/setup/pytorch-install.html#pytorch-neuronx-install>
 
 After creating the EC2 instance and installing `torch_neuron`, you can follow these steps to set up Speedster:
 - Check that the `torch_neuron` library is installed, you can do this by running `python -c "import torch_neuron; print(torch_neuron.__version__)"` in the console (if using `inf1` instances, otherwise change `torch_neuron` with `torch_neuronx`);

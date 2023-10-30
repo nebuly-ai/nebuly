@@ -474,7 +474,7 @@ Finally, extending the model and training algorithm to support larger matrix siz
 
 ## Speedster integration of AlphaTensor
 
-AlphaTensor opens the doors for further improvements to Speedster. [Speedster](https://github.com/nebuly-ai/nebullvm/tree/main/apps/accelerate/speedster) is an open source module designed to speed up AI inference with just a few lines of code. The library automatically applies the best set of SOTA optimization techniques to achieve maximum inference speed-up.
+AlphaTensor opens the doors for further improvements to Speedster. [Speedster](https://github.com/nebuly-ai/nebuly/tree/main/optimization/speedster) is an open source module designed to speed up AI inference with just a few lines of code. The library automatically applies the best set of SOTA optimization techniques to achieve maximum inference speed-up.
 
 Within Speedster, AlphaTensor will use its optimized kernels for matrix multiplication to find the optimal set of sub-operations for each layer in the AI model that involve matrix multiplication, including linear layers, attention layers, and convolution layers. The matrix multiplications will be decomposed into sub-matrix multiplications up to the maximum size supported by AlphaTensor, and the fastest decomposition will be selected for each layer. This optimization process will be applied to all layers in the neural network, resulting in a dramatically improved model.
 
